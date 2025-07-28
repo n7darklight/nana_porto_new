@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Projects - Nana Mulyana Maghfur</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        dark: { bg: '#121212', 'bg-secondary': '#1E1E1E', text: '#E5E7EB', 'text-secondary': '#A0A0A0', border: '#2E2E2E', accent: '#6366F1', 'accent-hover': '#4F46E5' },
+                        light: { bg: '#F9FAFB', 'bg-secondary': '#FFFFFF', text: '#111827', 'text-secondary': '#4B5563', border: '#E5E7EB', accent: '#4F46E5', 'accent-hover': '#4338CA' }
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text font-sans">
+
+    <!-- Header -->
+    <header class="bg-light-bg/80 dark:bg-dark-bg/80 backdrop-blur-lg sticky top-0 z-50 border-b border-light-border dark:border-dark-border">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="/" class="text-xl font-bold text-light-text dark:text-dark-text">&larr; Back to Portfolio</a>
+            <button id="theme-toggle" class="text-light-text-secondary hover:text-light-accent dark:text-dark-text-secondary dark:hover:text-dark-accent">
+                <svg id="theme-toggle-dark-icon" class="hidden h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                <svg id="theme-toggle-light-icon" class="hidden h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+            </button>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-12 md:py-20">
+        <section class="text-center mb-16">
+            <h1 class="text-4xl md:text-6xl font-extrabold text-light-text dark:text-dark-text mb-3">All Projects</h1>
+            <p class="text-xl text-light-text-secondary dark:text-dark-text-secondary">A complete archive of my work.</p>
+        </section>
+
+        <!-- Projects Grid -->
+        <section id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Projects will be dynamically inserted here -->
+            <div id="loading-indicator" class="text-center col-span-full">
+                <p class="text-lg text-light-text-secondary dark:text-dark-text-secondary">Loading projects...</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-light-bg-secondary dark:bg-dark-bg-secondary border-t border-light-border dark:border-dark-border mt-16">
+        <div class="container mx-auto px-6 py-6 text-center text-light-text-secondary dark:text-dark-text-secondary">
+            <p>&copy; 2024 Nana Mulyana Maghfur. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- Dynamic Project Loading ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // IMPORTANT: Set this to your deployed backend URL.
+            // For local testing, use: 'http://localhost:5000'
+            // For production, use your Render URL proxied through Cloudflare: '' (empty string for same-origin)
+            const API_BASE_URL = ''; // Use empty string for production
+
+            const projectsGrid = document.getElementById('projects-grid');
+            const loadingIndicator = document.getElementById('loading-indicator');
+
+            fetch(`${API_BASE_URL}/api/projects/all`)
+                .then(response => response.json())
+                .then(projects => {
+                    loadingIndicator.style.display = 'none'; // Hide loading indicator
+                    if (projects && projects.length > 0) {
+                        projects.forEach(project => {
+                            const projectCard = `
+                                <div class="bg-light-bg-secondary dark:bg-dark-bg-secondary rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-2 transition-all duration-300">
+                                    <img src="${project.image_url || 'https://placehold.co/600x400/c7d2fe/111827?text=Project'}" class="w-full h-48 object-cover" alt="${project.title}">
+                                    <div class="p-6">
+                                        <h3 class="text-xl font-semibold mb-2 text-light-text dark:text-dark-text">${project.title}</h3>
+                                        <p class="text-light-text-secondary dark:text-dark-text-secondary mb-4 h-20 overflow-hidden">
+                                            ${project.short_description}
+                                        </p>
+                                        <a href="/projects/project-detail.html?id=${project._id}" class="text-light-accent font-semibold hover:underline">View Details &rarr;</a>
+                                    </div>
+                                </div>
+                            `;
+                            projectsGrid.innerHTML += projectCard;
+                        });
+                    } else {
+                        projectsGrid.innerHTML = '<p class="text-center col-span-full">No projects found.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching projects:', error);
+                    loadingIndicator.style.display = 'none';
+                    projectsGrid.innerHTML = '<p class="text-center col-span-full text-red-500">Failed to load projects. Please try again later.</p>';
+                });
+        });
+
+        // --- Theme Toggling ---
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            themeToggleLightIcon.classList.remove('hidden');
+        } else {
+            document.documentElement.classList.remove('dark');
+            themeToggleDarkIcon.classList.remove('hidden');
+        }
+        themeToggleBtn.addEventListener('click', function() {
+            themeToggleDarkIcon.classList.toggle('hidden');
+            themeToggleLightIcon.classList.toggle('hidden');
+            if (localStorage.getItem('color-theme')) {
+                if (localStorage.getItem('color-theme') === 'light') {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                }
+            } else {
+                if (document.documentElement.classList.contains('dark')) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

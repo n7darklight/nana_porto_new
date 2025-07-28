@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Detail - Nana Mulyana Maghfur</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Add Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        dark: { bg: '#121212', 'bg-secondary': '#1E1E1E', text: '#E5E7EB', 'text-secondary': '#A0A0A0', border: '#2E2E2E', accent: '#6366F1', 'accent-hover': '#4F46E5' },
+                        light: { bg: '#F9FAFB', 'bg-secondary': '#FFFFFF', text: '#111827', 'text-secondary': '#4B5563', border: '#E5E7EB', accent: '#4F46E5', 'accent-hover': '#4338CA' }
+                    },
+                    // Add typography styles for rendered markdown
+                    typography: ({ theme }) => ({
+                        DEFAULT: {
+                            css: {
+                                color: theme('colors.light.text-secondary'),
+                                a: { color: theme('colors.light.accent'), '&:hover': { color: theme('colors.light.accent-hover') } },
+                                h2: { color: theme('colors.light.text') },
+                                h3: { color: theme('colors.light.text') },
+                                strong: { color: theme('colors.light.text') },
+                                ul: { 'list-style-type': 'disc', 'padding-left': '1.5em' },
+                                ol: { 'list-style-type': 'decimal', 'padding-left': '1.5em' },
+                            },
+                        },
+                        dark: {
+                             css: {
+                                color: theme('colors.dark.text-secondary'),
+                                a: { color: theme('colors.dark.accent'), '&:hover': { color: theme('colors.dark.accent-hover') } },
+                                h2: { color: theme('colors.dark.text') },
+                                h3: { color: theme('colors.dark.text') },
+                                strong: { color: theme('colors.dark.text') },
+                             },
+                        }
+                    }),
+                }
+            },
+            plugins: [
+                require('@tailwindcss/typography'),
+            ],
+        };
+    </script>
+</head>
+<body class="bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text font-sans">
+
+    <header class="bg-light-bg/80 dark:bg-dark-bg/80 backdrop-blur-lg sticky top-0 z-50 border-b border-light-border dark:border-dark-border">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="/" class="text-xl font-bold text-light-text dark:text-dark-text">&larr; Back to Portfolio</a>
+            <button id="theme-toggle" class="text-light-text-secondary hover:text-light-accent dark:text-dark-text-secondary dark:hover:text-dark-accent">
+                <svg id="theme-toggle-dark-icon" class="hidden h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                <svg id="theme-toggle-light-icon" class="hidden h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+            </button>
+        </nav>
+    </header>
+
+    <main id="main-content" class="container mx-auto px-6 py-12 md:py-20 opacity-0 transition-opacity duration-500">
+        <!-- Content will be dynamically inserted here -->
+    </main>
+
+    <footer class="bg-light-bg-secondary dark:bg-dark-bg-secondary border-t border-light-border dark:border-dark-border mt-16">
+        <div class="container mx-auto px-6 py-6 text-center text-light-text-secondary dark:text-dark-text-secondary">
+            <p>&copy; 2024 Nana Mulyana Maghfur. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- Dynamic Project Loading ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const API_BASE_URL = ''; // Use empty string for production
+
+            const mainContent = document.getElementById('main-content');
+            const urlParams = new URLSearchParams(window.location.search);
+            const projectId = urlParams.get('id');
+
+            if (!projectId) {
+                mainContent.innerHTML = '<p class="text-center text-red-500">No project ID provided.</p>';
+                mainContent.style.opacity = 1;
+                return;
+            }
+
+            fetch(`${API_BASE_URL}/api/projects/${projectId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Project not found');
+                    }
+                    return response.json();
+                })
+                .then(project => {
+                    document.title = `${project.title} - Nana Mulyana Maghfur`;
+
+                    const projectHtml = `
+                        <section class="text-center mb-16">
+                            <h1 class="text-4xl md:text-6xl font-extrabold text-light-text dark:text-dark-text mb-3">${project.title}</h1>
+                            <p class="text-xl text-light-accent font-medium">${project.short_description}</p>
+                        </section>
+
+                        <section class="mb-16">
+                            <div class="bg-light-bg-secondary dark:bg-dark-bg-secondary rounded-lg shadow-xl overflow-hidden">
+                                <img src="${project.image_url || 'https://placehold.co/1200x600/c7d2fe/111827?text=Project'}" alt="${project.title}" class="w-full h-auto object-cover">
+                            </div>
+                        </section>
+
+                        <section class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
+                            <div class="md:col-span-2 prose dark:prose-dark max-w-none">
+                                ${marked.parse(project.long_description || 'No details provided.')}
+                            </div>
+
+                            <div class="md:col-span-1">
+                                <div class="bg-light-bg-secondary dark:bg-dark-bg-secondary p-6 rounded-lg shadow-md">
+                                    <h3 class="text-2xl font-bold mb-4 text-light-text dark:text-dark-text">Tech Stack</h3>
+                                    <ul id="tech-stack-list" class="space-y-2">
+                                        <!-- Tech stack will be inserted here -->
+                                    </ul>
+                                    <div class="mt-8 space-y-4">
+                                        ${project.github_link ? `<a href="${project.github_link}" target="_blank" rel="noopener noreferrer" class="block w-full text-center bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md hover:bg-gray-900 transition-all font-semibold">View on GitHub</a>` : ''}
+                                        ${project.live_demo_link ? `<a href="${project.live_demo_link}" target="_blank" rel="noopener noreferrer" class="block w-full text-center bg-light-accent text-white px-6 py-3 rounded-lg shadow-md hover:bg-light-accent-hover transition-all font-semibold">Live Demo</a>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    `;
+                    mainContent.innerHTML = projectHtml;
+
+                    // Populate tech stack
+                    const techStackList = document.getElementById('tech-stack-list');
+                    if (project.technologies && project.technologies.length > 0) {
+                        project.technologies.forEach(tech => {
+                            techStackList.innerHTML += `<li class="font-medium text-light-text-secondary dark:text-dark-text-secondary">${tech}</li>`;
+                        });
+                    } else {
+                        techStackList.innerHTML = '<li>Not specified</li>';
+                    }
+                    
+                    mainContent.style.opacity = 1;
+
+                })
+                .catch(error => {
+                    console.error('Error fetching project details:', error);
+                    mainContent.innerHTML = `<p class="text-center text-red-500">${error.message}. Please check the project ID and try again.</p>`;
+                    mainContent.style.opacity = 1;
+                });
+        });
+
+        // --- Theme Toggling ---
+        // (Same as other pages)
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            themeToggleLightIcon.classList.remove('hidden');
+        } else {
+            document.documentElement.classList.remove('dark');
+            themeToggleDarkIcon.classList.remove('hidden');
+        }
+        themeToggleBtn.addEventListener('click', function() {
+            themeToggleDarkIcon.classList.toggle('hidden');
+            themeToggleLightIcon.classList.toggle('hidden');
+            if (localStorage.getItem('color-theme')) {
+                if (localStorage.getItem('color-theme') === 'light') {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                }
+            } else {
+                if (document.documentElement.classList.contains('dark')) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

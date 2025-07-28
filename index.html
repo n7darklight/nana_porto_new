@@ -248,31 +248,23 @@
 
         <!-- Projects Section -->
         <section id="projects" class="py-20 md:py-24 reveal-on-scroll">
-            <h2 class="text-3xl font-bold text-center mb-12 text-light-text dark:text-dark-text">Featured Projects</h2>
-            <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-                <!-- Project Card 1 -->
-                <div class="bg-light-bg-secondary dark:bg-dark-bg-secondary rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-2 transition-all duration-300 stagger-item">
-                    <img src="https://placehold.co/600x400/c7d2fe/111827?text=Batique" class="w-full h-48 object-cover" alt="Batique Project">
-                    <div class="p-6">
-                        <h3 class="text-xl font-semibold mb-2 text-light-text dark:text-dark-text">Batique: Batik Pattern Recognition</h3>
-                        <p class="text-light-text-secondary dark:text-dark-text-secondary mb-4">
-                            Led ML development for a mobile app that recognizes Indonesian Batik patterns. Capstone project for Bangkit Academy 2021.
-                        </p>
-                        <a href="/projects/batique.html" class="text-light-accent font-semibold hover:underline">View Details &rarr;</a>
-                    </div>
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-light-text dark:text-dark-text">Featured Projects</h2>
+                <p class="text-lg text-light-text-secondary dark:text-dark-text-secondary mt-2">A selection of my recent work.</p>
+            </div>
+
+            <!-- Container for dynamic projects -->
+            <div id="showcased-projects" class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Showcased projects will be dynamically inserted here -->
+                <div id="projects-loading-indicator" class="text-center col-span-full">
+                    <p class="text-lg text-light-text-secondary dark:text-dark-text-secondary">Loading featured projects...</p>
                 </div>
-                <!-- Placeholder Card 2 -->
-                <div class="flex items-center justify-center bg-light-bg-secondary dark:bg-dark-bg-secondary rounded-lg shadow-lg border-2 border-dashed border-light-border dark:border-dark-border transform hover:-translate-y-2 transition-all duration-300 stagger-item" style="animation-delay: 0.1s;">
-                    <div class="text-center p-6">
-                        <h3 class="text-xl font-semibold text-light-text-secondary dark:text-dark-text-secondary">New Project Coming Soon</h3>
-                    </div>
-                </div>
-                <!-- Placeholder Card 3 -->
-                 <div class="flex items-center justify-center bg-light-bg-secondary dark:bg-dark-bg-secondary rounded-lg shadow-lg border-2 border-dashed border-light-border dark:border-dark-border transform hover:-translate-y-2 transition-all duration-300 stagger-item" style="animation-delay: 0.2s;">
-                    <div class="text-center p-6">
-                        <h3 class="text-xl font-semibold text-light-text-secondary dark:text-dark-text-secondary">New Project Coming Soon</h3>
-                    </div>
-                </div>
+            </div>
+
+            <div class="text-center mt-16">
+                <a href="/all-projects.html" class="inline-block bg-light-accent text-white px-8 py-3 rounded-lg shadow-lg hover:bg-light-accent-hover hover:scale-105 transform transition-all font-semibold">
+                    View All Projects
+                </a>
             </div>
         </section>
 
@@ -492,6 +484,46 @@
         }, { threshold: 0.05 });
 
         sections.forEach(section => { observer.observe(section); });
+    </script>
+    <script>
+        // --- Dynamic Project Loading for Homepage ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // IMPORTANT: Set this to your deployed backend URL.
+            // For local testing, use: 'http://localhost:5000'
+            // For production, use your Render URL proxied through Cloudflare: '' (empty string for same-origin)
+            const API_BASE_URL = ''; // Use empty string for production
+
+            const projectsContainer = document.getElementById('showcased-projects');
+            const loadingIndicator = document.getElementById('projects-loading-indicator');
+
+            fetch(`${API_BASE_URL}/api/projects/showcased`)
+                .then(response => response.json())
+                .then(projects => {
+                    loadingIndicator.style.display = 'none';
+                    if (projects && projects.length > 0) {
+                        projects.forEach(project => {
+                            const projectCard = `
+                                <div class="bg-light-bg-secondary dark:bg-dark-bg-secondary rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-2 transition-all duration-300">
+                                    <img src="${project.image_url || 'https://placehold.co/600x400/c7d2fe/111827?text=Project'}" class="w-full h-48 object-cover" alt="${project.title}">
+                                    <div class="p-6">
+                                        <h3 class="text-xl font-semibold mb-2 text-light-text dark:text-dark-text">${project.title}</h3>
+                                        <p class="text-light-text-secondary dark:text-dark-text-secondary mb-4 h-20 overflow-hidden">${project.short_description}</p>
+                                        <a href="/projects/project-detail.html?id=${project._id}" class="text-light-accent font-semibold hover:underline">View Details &rarr;</a>
+                                    </div>
+                                </div>
+                            `;
+                            projectsContainer.innerHTML += projectCard;
+                        });
+                    } else {
+                        projectsContainer.innerHTML = '<p class="text-center col-span-full">No featured projects available right now.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching showcased projects:', error);
+                    loadingIndicator.style.display = 'none';
+                    projectsContainer.innerHTML = '<p class="text-center col-span-full text-red-500">Could not load featured projects.</p>';
+                });
+        });
     </script>
 </body>
 </html>
