@@ -22,25 +22,15 @@
                     }
                 }
             }
-            // The 'plugins' array with 'require' is removed as it's a Node.js feature and breaks browser-side JS.
         };
     </script>
-    <style>
-        /* Manual styles for rendered markdown content, replacing the typography plugin */
-        .markdown-content h2 { @apply text-2xl font-bold mt-8 mb-4 text-light-text dark:text-dark-text; }
-        .markdown-content h3 { @apply text-xl font-bold mt-6 mb-3 text-light-text dark:text-dark-text; }
-        .markdown-content p { @apply mb-4 leading-relaxed; }
-        .markdown-content a { @apply text-light-accent dark:text-dark-accent hover:underline; }
-        .markdown-content ul { @apply list-disc list-inside mb-4 space-y-2; }
-        .markdown-content ol { @apply list-decimal list-inside mb-4 space-y-2; }
-        .markdown-content strong { @apply font-semibold text-light-text dark:text-dark-text; }
-    </style>
+    <!-- The <style> block with @apply has been removed as it's not supported by the CDN script -->
 </head>
 <body class="bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text font-sans">
 
     <header class="bg-light-bg/80 dark:bg-dark-bg/80 backdrop-blur-lg sticky top-0 z-50 border-b border-light-border dark:border-dark-border">
         <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="/" class="text-xl font-bold text-light-text dark:text-dark-text">&larr; Back to Portfolio</a>
+            <a href="/" class="text-xl font-bold text-light-text dark:text-dark-text hover:text-light-accent dark:hover:text-dark-accent transition-colors">&larr; Back to Portfolio</a>
             <button id="theme-toggle" class="text-light-text-secondary hover:text-light-accent dark:text-dark-text-secondary dark:hover:text-dark-accent">
                 <svg id="theme-toggle-dark-icon" class="hidden h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
                 <svg id="theme-toggle-light-icon" class="hidden h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
@@ -50,6 +40,9 @@
 
     <main id="main-content" class="container mx-auto px-6 py-12 md:py-20 opacity-0 transition-opacity duration-500">
         <!-- Content will be dynamically inserted here -->
+        <div id="loading-indicator" class="text-center col-span-full">
+            <p class="text-lg text-light-text-secondary dark:text-dark-text-secondary">Loading project details...</p>
+        </div>
     </main>
 
     <footer class="bg-light-bg-secondary dark:bg-dark-bg-secondary border-t border-light-border dark:border-dark-border mt-16">
@@ -82,7 +75,6 @@
             return storedTheme || systemTheme;
         }
         
-        // Apply theme as soon as possible
         applyTheme(getInitialTheme());
 
         themeToggleBtn.addEventListener('click', function() {
@@ -92,18 +84,30 @@
             applyTheme(newTheme);
         });
 
-        // Listen for theme changes in other tabs/windows
         window.addEventListener('storage', function(e) {
             if (e.key === 'color-theme') {
                 applyTheme(e.newValue);
             }
         });
 
+        // --- NEW: Function to style markdown content ---
+        function applyStylingToMarkdown(container) {
+            container.querySelectorAll('h2').forEach(el => el.classList.add('text-2xl', 'font-bold', 'mt-8', 'mb-4', 'text-light-text', 'dark:text-dark-text'));
+            container.querySelectorAll('h3').forEach(el => el.classList.add('text-xl', 'font-bold', 'mt-6', 'mb-3', 'text-light-text', 'dark:text-dark-text'));
+            container.querySelectorAll('p').forEach(el => el.classList.add('mb-4', 'leading-relaxed', 'text-light-text-secondary', 'dark:text-dark-text-secondary'));
+            container.querySelectorAll('a').forEach(el => el.classList.add('text-light-accent', 'dark:text-dark-accent', 'hover:underline'));
+            container.querySelectorAll('ul').forEach(el => el.classList.add('list-disc', 'list-inside', 'mb-4', 'space-y-2', 'text-light-text-secondary', 'dark:text-dark-text-secondary'));
+            container.querySelectorAll('ol').forEach(el => el.classList.add('list-decimal', 'list-inside', 'mb-4', 'space-y-2', 'text-light-text-secondary', 'dark:text-dark-text-secondary'));
+            container.querySelectorAll('strong').forEach(el => el.classList.add('font-semibold', 'text-light-text', 'dark:text-dark-text'));
+            container.querySelectorAll('code').forEach(el => el.classList.add('bg-light-bg-secondary', 'dark:bg-dark-bg-secondary', 'px-2', 'py-1', 'rounded-md', 'text-sm'));
+        }
+
         // --- Dynamic Project Loading ---
         document.addEventListener('DOMContentLoaded', () => {
             const API_BASE_URL = ''; // Use empty string for production
 
             const mainContent = document.getElementById('main-content');
+            const loadingIndicator = document.getElementById('loading-indicator');
             const urlParams = new URLSearchParams(window.location.search);
             const projectId = urlParams.get('id');
 
@@ -115,40 +119,45 @@
 
             fetch(`${API_BASE_URL}/api/projects/${projectId}`)
                 .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Project not found');
-                    }
+                    if (!response.ok) { throw new Error('Project not found'); }
                     return response.json();
                 })
                 .then(project => {
                     document.title = `${project.title} - Nana Mulyana Maghfur`;
+                    loadingIndicator.style.display = 'none';
 
                     const projectHtml = `
                         <section class="text-center mb-16">
                             <h1 class="text-4xl md:text-6xl font-extrabold text-light-text dark:text-dark-text mb-3">${project.title}</h1>
-                            <p class="text-xl text-light-accent font-medium">${project.short_description}</p>
+                            <p class="text-xl text-light-accent font-medium">${project.short_description || ''}</p>
                         </section>
 
                         <section class="mb-16">
-                            <div class="bg-light-bg-secondary dark:bg-dark-bg-secondary rounded-lg shadow-xl overflow-hidden">
-                                <img src="${project.image_url || 'https://placehold.co/1200x600/c7d2fe/111827?text=Project'}" alt="${project.title}" class="w-full h-auto object-cover">
+                            <div class="bg-light-bg-secondary dark:bg-dark-bg-secondary rounded-lg shadow-xl overflow-hidden border border-light-border dark:border-dark-border">
+                                <img src="${project.image_url || 'https://placehold.co/1200x600/e2e8f0/4a5568?text=Project+Image'}" alt="${project.title}" class="w-full h-auto object-cover">
                             </div>
                         </section>
 
-                        <section class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
-                            <div class="md:col-span-2 markdown-content">
+                        <section class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
+                            <div class="lg:col-span-2" id="markdown-container">
                                 ${marked.parse(project.long_description || 'No details provided.')}
                             </div>
 
-                            <div class="md:col-span-1">
-                                <div class="bg-light-bg-secondary dark:bg-dark-bg-secondary p-6 rounded-lg shadow-md">
+                            <div class="lg:col-span-1">
+                                <div class="bg-light-bg-secondary dark:bg-dark-bg-secondary p-6 rounded-lg shadow-md border border-light-border dark:border-dark-border sticky top-24">
                                     <h3 class="text-2xl font-bold mb-4 text-light-text dark:text-dark-text">Tech Stack</h3>
-                                    <ul id="tech-stack-list" class="space-y-2">
-                                        <!-- Tech stack will be inserted here -->
-                                    </ul>
-                                    <div class="mt-8 space-y-4">
-                                        ${project.github_link ? `<a href="${project.github_link}" target="_blank" rel="noopener noreferrer" class="block w-full text-center bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md hover:bg-gray-900 transition-all font-semibold">View on GitHub</a>` : ''}
-                                        ${project.live_demo_link ? `<a href="${project.live_demo_link}" target="_blank" rel="noopener noreferrer" class="block w-full text-center bg-light-accent text-white px-6 py-3 rounded-lg shadow-md hover:bg-light-accent-hover transition-all font-semibold">Live Demo</a>` : ''}
+                                    <div id="tech-stack-container" class="flex flex-wrap gap-2 mb-8">
+                                        <!-- Tech stack pills will be inserted here -->
+                                    </div>
+                                    <div class="space-y-4">
+                                        ${project.github_link ? `<a href="${project.github_link}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 w-full text-center bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md hover:bg-gray-900 transition-all font-semibold">
+                                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.91 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                                            View on GitHub
+                                        </a>` : ''}
+                                        ${project.live_demo_link ? `<a href="${project.live_demo_link}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 w-full text-center bg-light-accent text-white px-6 py-3 rounded-lg shadow-md hover:bg-light-accent-hover transition-all font-semibold">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                                            Live Demo
+                                        </a>` : ''}
                                     </div>
                                 </div>
                             </div>
@@ -156,14 +165,23 @@
                     `;
                     mainContent.innerHTML = projectHtml;
 
-                    // Populate tech stack
-                    const techStackList = document.getElementById('tech-stack-list');
-                    if (project.technologies && project.technologies.length > 0) {
+                    // --- MODIFIED: Apply styles after content is rendered ---
+                    const markdownContainer = document.getElementById('markdown-container');
+                    if(markdownContainer) {
+                        applyStylingToMarkdown(markdownContainer);
+                    }
+
+                    // Populate tech stack as pills
+                    const techStackContainer = document.getElementById('tech-stack-container');
+                    if (project.technologies && project.technologies.length > 0 && project.technologies[0]) {
                         project.technologies.forEach(tech => {
-                            techStackList.innerHTML += `<li class="font-medium text-light-text-secondary dark:text-dark-text-secondary">${tech}</li>`;
+                            const pill = document.createElement('span');
+                            pill.className = 'bg-light-accent/10 text-light-accent dark:bg-dark-accent/20 dark:text-indigo-300 text-sm font-medium px-3 py-1 rounded-full';
+                            pill.textContent = tech;
+                            techStackContainer.appendChild(pill);
                         });
                     } else {
-                        techStackList.innerHTML = '<li>Not specified</li>';
+                        techStackContainer.innerHTML = '<p class="text-sm text-light-text-secondary dark:text-dark-text-secondary">Not specified</p>';
                     }
                     
                     mainContent.style.opacity = 1;
@@ -171,6 +189,7 @@
                 })
                 .catch(error => {
                     console.error('Error fetching project details:', error);
+                    loadingIndicator.style.display = 'none';
                     mainContent.innerHTML = `<p class="text-center text-red-500">${error.message}. Please check the project ID and try again.</p>`;
                     mainContent.style.opacity = 1;
                 });
