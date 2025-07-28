@@ -19,37 +19,22 @@
                     colors: {
                         dark: { bg: '#121212', 'bg-secondary': '#1E1E1E', text: '#E5E7EB', 'text-secondary': '#A0A0A0', border: '#2E2E2E', accent: '#6366F1', 'accent-hover': '#4F46E5' },
                         light: { bg: '#F9FAFB', 'bg-secondary': '#FFFFFF', text: '#111827', 'text-secondary': '#4B5563', border: '#E5E7EB', accent: '#4F46E5', 'accent-hover': '#4338CA' }
-                    },
-                    // Add typography styles for rendered markdown
-                    typography: ({ theme }) => ({
-                        DEFAULT: {
-                            css: {
-                                color: theme('colors.light.text-secondary'),
-                                a: { color: theme('colors.light.accent'), '&:hover': { color: theme('colors.light.accent-hover') } },
-                                h2: { color: theme('colors.light.text') },
-                                h3: { color: theme('colors.light.text') },
-                                strong: { color: theme('colors.light.text') },
-                                ul: { 'list-style-type': 'disc', 'padding-left': '1.5em' },
-                                ol: { 'list-style-type': 'decimal', 'padding-left': '1.5em' },
-                            },
-                        },
-                        dark: {
-                             css: {
-                                color: theme('colors.dark.text-secondary'),
-                                a: { color: theme('colors.dark.accent'), '&:hover': { color: theme('colors.dark.accent-hover') } },
-                                h2: { color: theme('colors.dark.text') },
-                                h3: { color: theme('colors.dark.text') },
-                                strong: { color: theme('colors.dark.text') },
-                             },
-                        }
-                    }),
+                    }
                 }
-            },
-            plugins: [
-                require('@tailwindcss/typography'),
-            ],
+            }
+            // The 'plugins' array with 'require' is removed as it's a Node.js feature and breaks browser-side JS.
         };
     </script>
+    <style>
+        /* Manual styles for rendered markdown content, replacing the typography plugin */
+        .markdown-content h2 { @apply text-2xl font-bold mt-8 mb-4 text-light-text dark:text-dark-text; }
+        .markdown-content h3 { @apply text-xl font-bold mt-6 mb-3 text-light-text dark:text-dark-text; }
+        .markdown-content p { @apply mb-4 leading-relaxed; }
+        .markdown-content a { @apply text-light-accent dark:text-dark-accent hover:underline; }
+        .markdown-content ul { @apply list-disc list-inside mb-4 space-y-2; }
+        .markdown-content ol { @apply list-decimal list-inside mb-4 space-y-2; }
+        .markdown-content strong { @apply font-semibold text-light-text dark:text-dark-text; }
+    </style>
 </head>
 <body class="bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text font-sans">
 
@@ -69,7 +54,7 @@
 
     <footer class="bg-light-bg-secondary dark:bg-dark-bg-secondary border-t border-light-border dark:border-dark-border mt-16">
         <div class="container mx-auto px-6 py-6 text-center text-light-text-secondary dark:text-dark-text-secondary">
-            <p>&copy; 2025 Nana Mulyana Maghfur. All Rights Reserved.</p>
+            <p>&copy; 2024 Nana Mulyana Maghfur. All Rights Reserved.</p>
         </div>
     </footer>
 
@@ -79,9 +64,8 @@
         const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
         const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
 
-        function setThemeFromStorage() {
-            if (localStorage.getItem('color-theme') === 'dark' ||
-                (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        function applyTheme(theme) {
+            if (theme === 'dark') {
                 document.documentElement.classList.add('dark');
                 themeToggleDarkIcon.classList.add('hidden');
                 themeToggleLightIcon.classList.remove('hidden');
@@ -92,49 +76,29 @@
             }
         }
 
-        setThemeFromStorage();
+        function getInitialTheme() {
+            const storedTheme = localStorage.getItem('color-theme');
+            const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            return storedTheme || systemTheme;
+        }
+        
+        // Apply theme as soon as possible
+        applyTheme(getInitialTheme());
 
         themeToggleBtn.addEventListener('click', function() {
-            if (document.documentElement.classList.contains('dark')) {
-                document.documentElement.classList.remove('dark');
-                localStorage.setItem('color-theme', 'light');
-            } else {
-                document.documentElement.classList.add('dark');
-                localStorage.setItem('color-theme', 'dark');
-            }
-            setThemeFromStorage();
+            const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('color-theme', newTheme);
+            applyTheme(newTheme);
         });
 
         // Listen for theme changes in other tabs/windows
         window.addEventListener('storage', function(e) {
             if (e.key === 'color-theme') {
-                setThemeFromStorage();
+                applyTheme(e.newValue);
             }
         });
-    </script>
-    <script>
-        // --- Mobile Menu Toggle ---
-        const mobileMenuButton = document.getElementById('mobile-menu-button');
-        const mobileMenu = document.getElementById('mobile-menu');
-        mobileMenuButton.addEventListener('click', () => { mobileMenu.classList.toggle('hidden'); });
-        const mobileMenuLinks = mobileMenu.getElementsByTagName('a');
-        for (let link of mobileMenuLinks) {
-            link.addEventListener('click', () => { mobileMenu.classList.add('hidden'); });
-        }
 
-        // --- Reveal Elements on Scroll ---
-        const sections = document.querySelectorAll('.reveal-on-scroll');
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('is-visible');
-                }
-            });
-        }, { threshold: 0.05 });
-
-        sections.forEach(section => { observer.observe(section); });
-    </script>
-    <script>
         // --- Dynamic Project Loading ---
         document.addEventListener('DOMContentLoaded', () => {
             const API_BASE_URL = ''; // Use empty string for production
@@ -172,7 +136,7 @@
                         </section>
 
                         <section class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
-                            <div class="md:col-span-2 prose dark:prose-dark max-w-none">
+                            <div class="md:col-span-2 markdown-content">
                                 ${marked.parse(project.long_description || 'No details provided.')}
                             </div>
 
