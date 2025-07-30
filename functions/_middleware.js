@@ -42,12 +42,13 @@ function jsonResponse(data, status = 200) {
 
 // Main function that runs on every request
 export async function onRequest(context) {
-  const { request, env } = context;
-  const url = new URL(request.url);
+  // --- ADDED FOR DEBUGGING: Wrap everything in a try...catch ---
+  try {
+    const { request, env } = context;
+    const url = new URL(request.url);
 
-  // --- Route 1: Handle API requests via Supabase ---
-  if (url.pathname.startsWith('/api/projects')) {
-    try {
+    // --- Route 1: Handle API requests via Supabase ---
+    if (url.pathname.startsWith('/api/projects')) {
       const projectId = url.searchParams.get('id');
       const showcased = url.searchParams.get('showcased') === 'true';
       
@@ -55,7 +56,6 @@ export async function onRequest(context) {
 
       if (projectId) {
         // Fetch a single project by its ID
-        // Supabase returns an array, so we take the first element
         const results = await fetchFromSupabase(context, 'projects', `?select=*&id=eq.${projectId}`);
         data = results.length > 0 ? results[0] : null;
         if (!data) return jsonResponse({ error: 'Project not found' }, 404);
@@ -70,22 +70,27 @@ export async function onRequest(context) {
       }
       
       return jsonResponse(data);
-
-    } catch (e) {
-      console.error(e);
-      return jsonResponse({ error: e.message }, 500);
     }
-  }
 
-  // --- Route 2: Proxy CMS requests to your Render backend ---
-  if (url.pathname.startsWith('/cms')) {
-    const backendHost = "nana-porto-cms.onrender.com"; // Your Render app URL
-    const newUrl = new URL(`https://${backendHost}${url.pathname}${url.search}`);
-    const newRequest = new Request(newUrl, request);
-    newRequest.headers.set('Host', backendHost);
-    return fetch(newRequest);
-  }
+    // --- Route 2: Proxy CMS requests to your Render backend ---
+    if (url.pathname.startsWith('/cms')) {
+      const backendHost = "nana-porto-cms.onrender.com"; // Your Render app URL
+      const newUrl = new URL(`https://${backendHost}${url.pathname}${url.search}`);
+      const newRequest = new Request(newUrl, request);
+      newRequest.headers.set('Host', backendHost);
+      return fetch(newRequest);
+    }
 
-  // --- Fallback: Serve the static site files ---
-  return await context.next();
+    // --- Fallback: Serve the static site files ---
+    return await context.next();
+
+  } catch (e) {
+    // If any error occurs, return a JSON response with the error details
+    console.error(e);
+    return jsonResponse({
+        error: "Worker script crashed",
+        message: e.message,
+        stack: e.stack,
+    }, 500);
+  }
 }
