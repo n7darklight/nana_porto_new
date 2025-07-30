@@ -72,6 +72,21 @@ export async function onRequest(context) {
       return jsonResponse(data);
     }
 
+    // --- Route: Rewrite root-level app subroutes to /pupajak-gen/:subroute ---
+    const pupajakSubroutes = [
+      '/login', '/generate', '/history', '/logout'
+      // Add more subroutes as needed
+    ];
+    for (const sub of pupajakSubroutes) {
+      if (url.pathname === sub || url.pathname.startsWith(sub + '/')) {
+        // Rewrite to /pupajak-gen/...
+        const newPath = '/pupajak-gen' + url.pathname;
+        const newUrl = new URL(url);
+        newUrl.pathname = newPath;
+        return Response.redirect(newUrl.toString(), 302);
+      }
+    }
+
     // --- Route 2: Proxy CMS requests to your Render backend ---
     if (url.pathname.startsWith('/cms')) {
       const backendHost = "nana-porto-cms.onrender.com"; // Your Render app URL
