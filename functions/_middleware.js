@@ -67,15 +67,13 @@ export async function onRequest(context) {
         return jsonResponse(data);
     }
 
-    // --- Route 2: Proxy all /puspajak-gen/* requests to the Vercel Flask App ---
+    // --- Route 2: Proxy /puspajak-gen/* requests to the Vercel Flask App ---
     if (pathname.startsWith('/puspajak-gen')) {
       const vercelHost = "pupajak-generator.vercel.app";
       
-      // FIX: Ensure the base path has a trailing slash to match Flask's blueprint root.
-      let newPath = pathname;
-      if (newPath === '/puspajak-gen') {
-        newPath = '/puspajak-gen/';
-      }
+      // STRATEGY: Strip the '/puspajak-gen' prefix.
+      // The backend Flask app will now receive paths like '/' or '/login'.
+      const newPath = pathname.replace('/puspajak-gen', '') || '/';
 
       const newUrl = new URL(`https://${vercelHost}${newPath}${url.search}`);
       
