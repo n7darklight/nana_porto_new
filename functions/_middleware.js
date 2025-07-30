@@ -1,7 +1,7 @@
 /**
  * This is a Pages Function that acts as a smart router.
- * It handles API requests by calling the Supabase auto-generated API.
- * This method has ZERO external dependencies and will not have build errors.
+ * It rewrites clean URLs to the appropriate backend service (Vercel, Render)
+ * or serves static files, all without browser redirects.
  */
 
 // Helper function to make authenticated requests to the Supabase API
@@ -32,6 +32,7 @@ async function fetchFromSupabase(context, path, params = '') {
   return response.json();
 }
 
+
 // Helper function to create a JSON response for the browser
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -42,56 +43,68 @@ function jsonResponse(data, status = 200) {
 
 // Main function that runs on every request
 export async function onRequest(context) {
-  // --- ADDED FOR DEBUGGING: Wrap everything in a try...catch ---
   try {
     const { request, env } = context;
     const url = new URL(request.url);
 
-    // --- Route 1: Handle API requests via Supabase ---
-    if (url.pathname.startsWith('/api/projects')) {
-      const projectId = url.searchParams.get('id');
-      const showcased = url.searchParams.get('showcased') === 'true';
-      
-      let data;
-
-      if (projectId) {
-        // Fetch a single project by its ID
-        const results = await fetchFromSupabase(context, 'project_data', `?select=*&id=eq.${projectId}`);
-        data = results.length > 0 ? results[0] : null;
-        if (!data) return jsonResponse({ error: 'Project not found' }, 404);
-
-      } else if (showcased) {
-        // Fetch top 3 showcased projects
-        data = await fetchFromSupabase(context, 'project_data', '?select=*&is_showcased=eq.true&order=display_order.asc&limit=3');
-      
-      } else {
-        // Fetch all projects
-        data = await fetchFromSupabase(context, 'project_data', '?select=*&order=display_order.asc');
-      }
-      
-      return jsonResponse(data);
-    }
-
-    // --- Route: Rewrite root-level app subroutes to /puspajak-gen/:subroute ---
-    const pupajakSubroutes = [
-      '/', '/login', '/generate', '/history', '/logout'
-      // Add more subroutes as your Flask app grows
+    // --- Define the "clean" root paths that belong to your Flask app ---
+    const cleanFlaskPaths = [
+      '/', // The root path needs to be handled
+      '/login',
+      '/generate',
+      '/history',
+      '/logout'
     ];
-    for (const sub of pupajakSubroutes) {
-      // Match exact or subpath (e.g. /login or /login/extra)
-      if (
-        url.pathname === sub ||
-        (sub !== '/' && url.pathname.startsWith(sub + '/'))
-      ) {
-        // Special case for root "/"
-        const newPath = sub === '/' && url.pathname === '/' ? '/puspajak-gen/' : '/puspajak-gen' + url.pathname;
-        const newUrl = new URL(url);
-        newUrl.pathname = newPath;
-        return Response.redirect(newUrl.toString(), 302);
+    
+    // --- Check if the request is for the Flask app ---
+    // This is true if it's a clean path OR if it already has the blueprint prefix.
+    const isCleanPath = cleanFlaskPaths.some(p => url.pathname === p || (p !== '/' && url.pathname.startsWith(p + '/')));
+    const hasPrefix = url.pathname.startsWith('/puspajak-gen');
+    
+    // --- Route 1: Rewrite or Proxy requests to the Vercel-hosted Flask App ---
+    if (isCleanPath || hasPrefix) {
+      const vercelHost = "pupajak-generator.vercel.app";
+      let newPath;
+
+      if (hasPrefix) {
+        // The path already has the prefix (e.g., from a form post), so we use it as-is.
+        newPath = url.pathname;
+      } else {
+        // It's a clean path (e.g., from a user typing in the URL), so we add the prefix.
+        newPath = `/puspajak-gen${url.pathname === '/' ? '/' : url.pathname}`;
       }
+      
+      const newUrl = new URL(`https://${vercelHost}${newPath}${url.search}`);
+      
+      // Create a new request object to proxy to the Vercel backend
+      const newRequest = new Request(newUrl, request);
+      newRequest.headers.set('Host', vercelHost);
+      
+      // Return the response from Vercel directly. The user's URL does not change.
+      return fetch(newRequest);
     }
 
-    // --- Route 2: Proxy CMS requests to your Render backend ---
+    // --- Route 2: Proxy API requests to Supabase ---
+    if (url.pathname.startsWith('/api/projects')) {
+        const projectId = url.searchParams.get('id');
+        const showcased = url.searchParams.get('showcased') === 'true';
+        
+        let data;
+
+        if (projectId) {
+            const results = await fetchFromSupabase(context, 'project_data', `?select=*&id=eq.${projectId}`);
+            data = results.length > 0 ? results[0] : null;
+            if (!data) return jsonResponse({ error: 'Project not found' }, 404);
+        } else if (showcased) {
+            data = await fetchFromSupabase(context, 'project_data', '?select=*&is_showcased=eq.true&order=display_order.asc&limit=3');
+        } else {
+            data = await fetchFromSupabase(context, 'project_data', '?select=*&order=display_order.asc');
+        }
+        
+        return jsonResponse(data);
+    }
+
+    // --- Route 3: Proxy CMS requests to your Render backend ---
     if (url.pathname.startsWith('/cms')) {
       const backendHost = "nana-porto-cms.onrender.com"; // Your Render app URL
       const newUrl = new URL(`https://${backendHost}${url.pathname}${url.search}`);
@@ -100,23 +113,12 @@ export async function onRequest(context) {
       return fetch(newRequest);
     }
 
-    // --- Route 3: Proxy /pupajak-gen to external Vercel app ---
-    if (url.pathname.startsWith('/puspajak-gen')) {
-      const vercelHost = "pupajak-generator.vercel.app";
-      // Remove the "/pupajak-gen" prefix for the proxied request
-      const vercelPath = url.pathname.replace(/^\/puspajak-gen/, '') || '/';
-      const newUrl = new URL(`https://${vercelHost}${vercelPath}${url.search}`);
-      const newRequest = new Request(newUrl, request);
-      newRequest.headers.set('Host', vercelHost);
-      return fetch(newRequest);
-    }
-
-    // --- Fallback: Serve the static site files ---
+    // --- Fallback: If no routes matched, serve the static site files ---
     return await context.next();
 
   } catch (e) {
     // If any error occurs, return a JSON response with the error details
-    console.error(e);
+    console.error("Middleware Crash:", e);
     return jsonResponse({
         error: "Worker script crashed",
         message: e.message,
