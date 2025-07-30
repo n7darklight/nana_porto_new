@@ -80,7 +80,7 @@ export async function onRequest(context) {
     for (const sub of pupajakSubroutes) {
       if (url.pathname === sub || url.pathname.startsWith(sub + '/')) {
         // Rewrite to /pupajak-gen/...
-        const newPath = '/pupajak-gen' + url.pathname;
+        const newPath = '/puspajak-gen' + url.pathname;
         const newUrl = new URL(url);
         newUrl.pathname = newPath;
         return Response.redirect(newUrl.toString(), 302);
