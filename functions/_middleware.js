@@ -56,17 +56,17 @@ export async function onRequest(context) {
 
       if (projectId) {
         // Fetch a single project by its ID
-        const results = await fetchFromSupabase(context, 'projects', `?select=*&id=eq.${projectId}`);
+        const results = await fetchFromSupabase(context, 'project_data', `?select=*&id=eq.${projectId}`);
         data = results.length > 0 ? results[0] : null;
         if (!data) return jsonResponse({ error: 'Project not found' }, 404);
 
       } else if (showcased) {
         // Fetch top 3 showcased projects
-        data = await fetchFromSupabase(context, 'projects', '?select=*&is_showcased=eq.true&order=display_order.asc&limit=3');
+        data = await fetchFromSupabase(context, 'project_data', '?select=*&is_showcased=eq.true&order=display_order.asc&limit=3');
       
       } else {
         // Fetch all projects
-        data = await fetchFromSupabase(context, 'projects', '?select=*&order=display_order.asc');
+        data = await fetchFromSupabase(context, 'project_data', '?select=*&order=display_order.asc');
       }
       
       return jsonResponse(data);
