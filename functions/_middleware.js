@@ -68,22 +68,25 @@ export async function onRequest(context) {
     }
 
     // --- Route 2: Proxy /puspajak-gen/* and related routes to the Vercel Flask App ---
-    const flaskPrefix = '/puspajak-gen';
-    // Add other clean paths that the Flask app might redirect to.
-    const otherFlaskPaths = ['/login', '/generate', '/history', '/logout'];
+     const flaskPrefix = '/puspajak-gen';
+    const cleanFlaskPaths = ['/login', '/generate', '/history', '/logout']; // Paths Flask might redirect to
 
-    if (pathname.startsWith(flaskPrefix) || otherFlaskPaths.includes(pathname)) {
+    const isPrefixedRequest = pathname.startsWith(flaskPrefix);
+    const isCleanRedirect = cleanFlaskPaths.some(p => pathname.startsWith(p));
+
+    if (isPrefixedRequest || isCleanRedirect) {
         const vercelHost = "pupajak-generator.vercel.app";
-        
-        // If the path doesn't already have the prefix, add it.
-        // This handles redirects to clean URLs like '/login'.
-        let newPath = pathname;
-        if (!pathname.startsWith(flaskPrefix)) {
-            newPath = flaskPrefix + pathname;
+        let pathForVercel;
+
+        if (isPrefixedRequest) {
+            // It's a direct request like /puspajak-gen/login. Strip the prefix.
+            pathForVercel = pathname.replace(flaskPrefix, '') || '/';
+        } else {
+            // It's a redirect to a clean path like /login. Use it as is.
+            pathForVercel = pathname;
         }
 
-        const newUrl = new URL(`https://${vercelHost}${newPath}${url.search}`);
-        
+        const newUrl = new URL(`https://${vercelHost}${pathForVercel}${url.search}`);
         const newRequest = new Request(newUrl, request);
         newRequest.headers.set('Host', vercelHost);
         
