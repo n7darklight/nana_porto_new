@@ -488,19 +488,17 @@
     <script>
         // --- Dynamic Project Loading for Homepage ---
         document.addEventListener('DOMContentLoaded', () => {
-            // IMPORTANT: Set this to your deployed backend URL.
-            // For local testing, use: 'http://localhost:5000'
-            // For production, use your Render URL proxied through Cloudflare: '' (empty string for same-origin)
             const API_BASE_URL = ''; // Use empty string for production
 
             const projectsContainer = document.getElementById('showcased-projects');
             const loadingIndicator = document.getElementById('projects-loading-indicator');
 
-            fetch(`${API_BASE_URL}/api/projects/showcased`)
+            fetch(`${API_BASE_URL}/api/projects?showcased=true`)
                 .then(response => response.json())
                 .then(projects => {
                     loadingIndicator.style.display = 'none';
                     if (projects && projects.length > 0) {
+                        projectsContainer.innerHTML = ''; // Clear the container first
                         projects.forEach(project => {
                             const projectCard = `
                                 <div class="bg-light-bg-secondary dark:bg-dark-bg-secondary rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-2 transition-all duration-300">
@@ -508,7 +506,7 @@
                                     <div class="p-6">
                                         <h3 class="text-xl font-semibold mb-2 text-light-text dark:text-dark-text">${project.title}</h3>
                                         <p class="text-light-text-secondary dark:text-dark-text-secondary mb-4 h-20 overflow-hidden">${project.short_description}</p>
-                                        <a href="/projects/project-detail.html?id=${project._id}" class="text-light-accent font-semibold hover:underline">View Details &rarr;</a>
+                                        <a href="/projects/project-detail.html?id=${project.id}" class="text-light-accent font-semibold hover:underline">View Details &rarr;</a>
                                     </div>
                                 </div>
                             `;
