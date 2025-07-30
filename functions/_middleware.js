@@ -1,7 +1,6 @@
 /**
  * This is a Pages Function that acts as a smart router.
- * It rewrites clean URLs to the appropriate backend service (Vercel, Render)
- * or serves static files, all without browser redirects.
+ * It proxies requests to the correct backend service based on the URL path.
  */
 
 // Helper function to make authenticated requests to the Supabase API
@@ -48,45 +47,7 @@ export async function onRequest(context) {
     const url = new URL(request.url);
     const { pathname } = url;
 
-    // --- Define paths for the Flask App ---
-    const flaskPrefix = '/puspajak-gen';
-    const cleanFlaskPaths = ['/login', '/generate', '/history', '/logout']; // Root '/' is handled separately
-
-    let isFlaskRoute = false;
-    let newPath = pathname; // Default to the original path
-
-    // --- Determine if the request is for the Flask app and what the new path should be ---
-    if (pathname === '/') {
-        // Case 1: The request is for the absolute root of the domain.
-        isFlaskRoute = true;
-        newPath = `${flaskPrefix}/`; // Rewrite to the blueprint's root.
-    } else if (pathname.startsWith(flaskPrefix)) {
-        // Case 2: The request already has the prefix (e.g., from a form post).
-        isFlaskRoute = true;
-        // The path is already correct, so newPath remains unchanged.
-    } else {
-        // Case 3: Check if it's another clean path (e.g., /login, /generate).
-        for (const p of cleanFlaskPaths) {
-            if (pathname.startsWith(p)) {
-                isFlaskRoute = true;
-                newPath = `${flaskPrefix}${pathname}`; // Add the prefix.
-                break;
-            }
-        }
-    }
-    
-    // --- Route 1: If it's a Flask route, proxy it to Vercel ---
-    if (isFlaskRoute) {
-      const vercelHost = "pupajak-generator.vercel.app";
-      const newUrl = new URL(`https://${vercelHost}${newPath}${url.search}`);
-      
-      const newRequest = new Request(newUrl, request);
-      newRequest.headers.set('Host', vercelHost);
-      
-      return fetch(newRequest);
-    }
-
-    // --- Route 2: Proxy API requests to Supabase ---
+    // --- Route 1: Handle API requests for the portfolio ---
     if (pathname.startsWith('/api/projects')) {
         const projectId = url.searchParams.get('id');
         const showcased = url.searchParams.get('showcased') === 'true';
@@ -106,16 +67,28 @@ export async function onRequest(context) {
         return jsonResponse(data);
     }
 
+    // --- Route 2: Proxy all /puspajak-gen/* requests to the Vercel Flask App ---
+    if (pathname.startsWith('/puspajak-gen')) {
+      const vercelHost = "pupajak-generator.vercel.app";
+      // We use the original path as-is, without any changes.
+      const newUrl = new URL(`https://${vercelHost}${pathname}${url.search}`);
+      
+      const newRequest = new Request(newUrl, request);
+      newRequest.headers.set('Host', vercelHost);
+      
+      return fetch(newRequest);
+    }
+
     // --- Route 3: Proxy CMS requests to your Render backend ---
     if (pathname.startsWith('/cms')) {
-      const backendHost = "nana-porto-cms.onrender.com"; // Your Render app URL
+      const backendHost = "nana-porto-cms.onrender.com";
       const newUrl = new URL(`https://${backendHost}${pathname}${url.search}`);
       const newRequest = new Request(newUrl, request);
       newRequest.headers.set('Host', backendHost);
       return fetch(newRequest);
     }
 
-    // --- Fallback: If no routes matched, serve the static site files ---
+    // --- Fallback: If no routes matched, serve the static portfolio files ---
     return await context.next();
 
   } catch (e) {
