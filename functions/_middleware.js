@@ -1,13 +1,38 @@
 /**
  * This is a Pages Function that acts as a smart router.
- * It handles API requests directly for speed and proxies CMS requests.
+ * It handles API requests by calling the Supabase auto-generated API.
+ * This method has ZERO external dependencies and will not have build errors.
  */
 
-// We need a lightweight MongoDB client library.
-// Cloudflare Pages automatically includes this when it sees the import.
-import { MongoClient, ObjectId } from 'mongodb';
+// Helper function to make authenticated requests to the Supabase API
+async function fetchFromSupabase(context, path, params = '') {
+  const { SUPABASE_URL, SUPABASE_ANON_KEY } = context.env;
 
-// Helper function to create a JSON response
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error('Supabase environment variables not set.');
+  }
+
+  // Construct the full URL for the Supabase REST API
+  const supabaseUrl = `${SUPABASE_URL}/rest/v1/${path}${params}`;
+
+  // Make the fetch request with the required headers for Supabase
+  const response = await fetch(supabaseUrl, {
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+    }
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Supabase API Error: ${errorText}`);
+    throw new Error(`API request failed with status ${response.status}`);
+  }
+
+  return response.json();
+}
+
+// Helper function to create a JSON response for the browser
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status: status,
@@ -18,57 +43,37 @@ function jsonResponse(data, status = 200) {
 // Main function that runs on every request
 export async function onRequest(context) {
   const { request, env } = context;
-  const url = new URL(request.url);
+  const url = new new URL(request.url);
 
-  // --- Route 1: Handle API requests directly from MongoDB ---
-  if (url.pathname.startsWith('/api/')) {
-    // Check if the MONGO_URI secret is set
-    if (!env.MONGO_URI) {
-      return jsonResponse({ error: 'Database not configured' }, 500);
-    }
-
-    // Connect to the database
-    const client = new MongoClient(env.MONGO_URI);
-    
+  // --- Route 1: Handle API requests via Supabase ---
+  if (url.pathname.startsWith('/api/projects')) {
     try {
-      await client.connect();
-      const projectsCollection = client.db('PortoCMS').collection('project_data');
+      const projectId = url.searchParams.get('id');
+      const showcased = url.searchParams.get('showcased') === 'true';
+      
+      let data;
 
-      // API Endpoint: /api/projects/all
-      if (url.pathname === '/api/projects/all') {
-        const projects = await projectsCollection.find({}).sort("display_order", 1).toArray();
-        return jsonResponse(projects);
-      }
+      if (projectId) {
+        // Fetch a single project by its ID
+        // Supabase returns an array, so we take the first element
+        const results = await fetchFromSupabase(context, 'projects', `?select=*&id=eq.${projectId}`);
+        data = results.length > 0 ? results[0] : null;
+        if (!data) return jsonResponse({ error: 'Project not found' }, 404);
 
-      // API Endpoint: /api/projects/showcased
-      if (url.pathname === '/api/projects/showcased') {
-        const projects = await projectsCollection.find({ "is_showcased": true }).sort("display_order", 1).limit(3).toArray();
-        return jsonResponse(projects);
-      }
-
-      // API Endpoint: /api/projects/:id
-      const match = url.pathname.match(/^\/api\/projects\/(.+)/);
-      if (match) {
-        const projectId = match[1];
-        try {
-            const project = await projectsCollection.findOne({ _id: new ObjectId(projectId) });
-            if (project) {
-                return jsonResponse(project);
-            } else {
-                return jsonResponse({ error: 'Project not found' }, 404);
-            }
-        } catch (e) {
-            return jsonResponse({ error: 'Invalid project ID format' }, 400);
-        }
+      } else if (showcased) {
+        // Fetch top 3 showcased projects
+        data = await fetchFromSupabase(context, 'projects', '?select=*&is_showcased=eq.true&order=display_order.asc&limit=3');
+      
+      } else {
+        // Fetch all projects
+        data = await fetchFromSupabase(context, 'projects', '?select=*&order=display_order.asc');
       }
       
-      return jsonResponse({ error: 'API route not found' }, 404);
+      return jsonResponse(data);
 
     } catch (e) {
       console.error(e);
-      return jsonResponse({ error: 'Database connection error' }, 500);
-    } finally {
-      await client.close();
+      return jsonResponse({ error: e.message }, 500);
     }
   }
 
