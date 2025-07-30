@@ -81,6 +81,17 @@ export async function onRequest(context) {
       return fetch(newRequest);
     }
 
+    // --- Route 3: Proxy /pupajak-gen to external Vercel app ---
+    if (url.pathname.startsWith('/pupajak-gen')) {
+      const vercelHost = "pupajak-generator.vercel.app";
+      // Remove the "/pupajak-gen" prefix for the proxied request
+      const vercelPath = url.pathname.replace(/^\/pupajak-gen/, '') || '/';
+      const newUrl = new URL(`https://${vercelHost}${vercelPath}${url.search}`);
+      const newRequest = new Request(newUrl, request);
+      newRequest.headers.set('Host', vercelHost);
+      return fetch(newRequest);
+    }
+
     // --- Fallback: Serve the static site files ---
     return await context.next();
 
