@@ -74,7 +74,7 @@ export async function onRequest(context) {
 
     // --- Route: Rewrite root-level app subroutes to /pupajak-gen/:subroute ---
     const pupajakSubroutes = [
-      '/login', '/generate', '/history', '/logout'
+      '/generate', '/history'
       // Add more subroutes as needed
     ];
     for (const sub of pupajakSubroutes) {
