@@ -72,15 +72,19 @@ export async function onRequest(context) {
       return jsonResponse(data);
     }
 
-    // --- Route: Rewrite root-level app subroutes to /pupajak-gen/:subroute ---
+    // --- Route: Rewrite root-level app subroutes to /puspajak-gen/:subroute ---
     const pupajakSubroutes = [
-      '/generate', '/history'
-      // Add more subroutes as needed
+      '/', '/login', '/generate', '/history', '/logout'
+      // Add more subroutes as your Flask app grows
     ];
     for (const sub of pupajakSubroutes) {
-      if (url.pathname === sub || url.pathname.startsWith(sub + '/')) {
-        // Rewrite to /pupajak-gen/...
-        const newPath = '/puspajak-gen' + url.pathname;
+      // Match exact or subpath (e.g. /login or /login/extra)
+      if (
+        url.pathname === sub ||
+        (sub !== '/' && url.pathname.startsWith(sub + '/'))
+      ) {
+        // Special case for root "/"
+        const newPath = sub === '/' && url.pathname === '/' ? '/puspajak-gen/' : '/puspajak-gen' + url.pathname;
         const newUrl = new URL(url);
         newUrl.pathname = newPath;
         return Response.redirect(newUrl.toString(), 302);
