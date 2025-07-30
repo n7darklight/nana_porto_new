@@ -82,10 +82,10 @@ export async function onRequest(context) {
     }
 
     // --- Route 3: Proxy /pupajak-gen to external Vercel app ---
-    if (url.pathname.startsWith('/pupajak-gen')) {
+    if (url.pathname.startsWith('/puspajak-gen')) {
       const vercelHost = "pupajak-generator.vercel.app";
       // Remove the "/pupajak-gen" prefix for the proxied request
-      const vercelPath = url.pathname.replace(/^\/pupajak-gen/, '') || '/';
+      const vercelPath = url.pathname.replace(/^\/puspajak-gen/, '') || '/';
       const newUrl = new URL(`https://${vercelHost}${vercelPath}${url.search}`);
       const newRequest = new Request(newUrl, request);
       newRequest.headers.set('Host', vercelHost);
