@@ -46,46 +46,48 @@ export async function onRequest(context) {
   try {
     const { request, env } = context;
     const url = new URL(request.url);
+    const { pathname } = url;
 
-    // --- Define the "clean" root paths that belong to your Flask app ---
-    const cleanFlaskPaths = [
-      '/', // The root path needs to be handled
-      '/login',
-      '/generate',
-      '/history',
-      '/logout'
-    ];
+    // --- Define paths for the Flask App ---
+    const flaskPrefix = '/puspajak-gen';
+    const cleanFlaskPaths = ['/login', '/generate', '/history', '/logout']; // Root '/' is handled separately
+
+    let isFlaskRoute = false;
+    let newPath = pathname; // Default to the original path
+
+    // --- Determine if the request is for the Flask app and what the new path should be ---
+    if (pathname === '/') {
+        // Case 1: The request is for the absolute root of the domain.
+        isFlaskRoute = true;
+        newPath = `${flaskPrefix}/`; // Rewrite to the blueprint's root.
+    } else if (pathname.startsWith(flaskPrefix)) {
+        // Case 2: The request already has the prefix (e.g., from a form post).
+        isFlaskRoute = true;
+        // The path is already correct, so newPath remains unchanged.
+    } else {
+        // Case 3: Check if it's another clean path (e.g., /login, /generate).
+        for (const p of cleanFlaskPaths) {
+            if (pathname.startsWith(p)) {
+                isFlaskRoute = true;
+                newPath = `${flaskPrefix}${pathname}`; // Add the prefix.
+                break;
+            }
+        }
+    }
     
-    // --- Check if the request is for the Flask app ---
-    // This is true if it's a clean path OR if it already has the blueprint prefix.
-    const isCleanPath = cleanFlaskPaths.some(p => url.pathname === p || (p !== '/' && url.pathname.startsWith(p + '/')));
-    const hasPrefix = url.pathname.startsWith('/puspajak-gen');
-    
-    // --- Route 1: Rewrite or Proxy requests to the Vercel-hosted Flask App ---
-    if (isCleanPath || hasPrefix) {
+    // --- Route 1: If it's a Flask route, proxy it to Vercel ---
+    if (isFlaskRoute) {
       const vercelHost = "pupajak-generator.vercel.app";
-      let newPath;
-
-      if (hasPrefix) {
-        // The path already has the prefix (e.g., from a form post), so we use it as-is.
-        newPath = url.pathname;
-      } else {
-        // It's a clean path (e.g., from a user typing in the URL), so we add the prefix.
-        newPath = `/puspajak-gen${url.pathname === '/' ? '/' : url.pathname}`;
-      }
-      
       const newUrl = new URL(`https://${vercelHost}${newPath}${url.search}`);
       
-      // Create a new request object to proxy to the Vercel backend
       const newRequest = new Request(newUrl, request);
       newRequest.headers.set('Host', vercelHost);
       
-      // Return the response from Vercel directly. The user's URL does not change.
       return fetch(newRequest);
     }
 
     // --- Route 2: Proxy API requests to Supabase ---
-    if (url.pathname.startsWith('/api/projects')) {
+    if (pathname.startsWith('/api/projects')) {
         const projectId = url.searchParams.get('id');
         const showcased = url.searchParams.get('showcased') === 'true';
         
@@ -105,9 +107,9 @@ export async function onRequest(context) {
     }
 
     // --- Route 3: Proxy CMS requests to your Render backend ---
-    if (url.pathname.startsWith('/cms')) {
+    if (pathname.startsWith('/cms')) {
       const backendHost = "nana-porto-cms.onrender.com"; // Your Render app URL
-      const newUrl = new URL(`https://${backendHost}${url.pathname}${url.search}`);
+      const newUrl = new URL(`https://${backendHost}${pathname}${url.search}`);
       const newRequest = new Request(newUrl, request);
       newRequest.headers.set('Host', backendHost);
       return fetch(newRequest);
