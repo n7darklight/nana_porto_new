@@ -43,7 +43,7 @@ function jsonResponse(data, status = 200) {
 // Main function that runs on every request
 export async function onRequest(context) {
   const { request, env } = context;
-  const url = new new URL(request.url);
+  const url = new URL(request.url);
 
   // --- Route 1: Handle API requests via Supabase ---
   if (url.pathname.startsWith('/api/projects')) {
