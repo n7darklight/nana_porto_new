@@ -69,7 +69,7 @@ export async function onRequest(context) {
 
     // --- Route 2: Proxy /puspajak-gen/* and related routes to the Vercel Flask App ---
      const flaskPrefix = '/puspajak-gen';
-    const cleanFlaskPaths = ['/login', '/generate', '/history', '/logout']; // Paths Flask might redirect to
+    const cleanFlaskPaths = ['/login-puspajak', '/generate-puspajak', '/history-puspajak', '/logout-puspajak']; // Paths Flask might redirect to
 
     const isPrefixedRequest = pathname.startsWith(flaskPrefix);
     const isCleanRedirect = cleanFlaskPaths.some(p => pathname.startsWith(p));
@@ -115,3 +115,6 @@ export async function onRequest(context) {
     }, 500);
   }
 }
+
+
+"https://icebergchart-explainer.vercel.app/"
