@@ -3,32 +3,62 @@
  * It proxies requests to the correct backend service based on the URL path.
  */
 
-// Helper function to make authenticated requests to the Supabase API
-async function fetchFromSupabase(context, path, params = '') {
-  const { SUPABASE_URL, SUPABASE_ANON_KEY } = context.env;
+// PostgreSQL connection configuration
+const { Pool } = require('pg');
 
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    throw new Error('Supabase environment variables not set.');
-  }
+// Create a connection pool for PostgreSQL
+const pool = new Pool({
+  connectionString: 'postgresql://user:pass@100.110.62.45:5433/postgres',
+  ssl: false // Disable SSL for local development
+});
 
-  // Construct the full URL for the Supabase REST API
-  const supabaseUrl = `${SUPABASE_URL}/rest/v1/${path}${params}`;
-
-  // Make the fetch request with the required headers for Supabase
-  const response = await fetch(supabaseUrl, {
-    headers: {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+// Helper function to execute SQL queries against PostgreSQL
+async function queryDatabase(sql, params = []) {
+  let client;
+  try {
+    client = await pool.connect();
+    const result = await client.query(sql, params);
+    return result.rows;
+  } catch (error) {
+    console.error('Database query error:', error);
+    throw new Error(`Database query failed: ${error.message}`);
+  } finally {
+    if (client) {
+      client.release();
     }
-  });
+  }
+}
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Supabase API Error: ${errorText}`);
-    throw new Error(`API request failed with status ${response.status}`);
+// Helper function to fetch data from PostgreSQL (replaces fetchFromSupabase)
+async function fetchFromPostgres(table, conditions = {}, options = {}) {
+  const { schema = 'porto_cms', limit, orderBy, select = '*' } = options;
+
+  // Build the SQL query based on parameters
+  let query = `SELECT ${select} FROM ${schema}.${table}`;
+  const params = [];
+
+  // Add WHERE conditions
+  if (Object.keys(conditions).length > 0) {
+    const whereClauses = [];
+    Object.entries(conditions).forEach(([key, value], index) => {
+      whereClauses.push(`${key} = $${index + 1}`);
+      params.push(value);
+    });
+    query += ` WHERE ${whereClauses.join(' AND ')}`;
   }
 
-  return response.json();
+  // Add ORDER BY
+  if (orderBy) {
+    query += ` ORDER BY ${orderBy}`;
+  }
+
+  // Add LIMIT
+  if (limit) {
+    query += ` LIMIT $${params.length + 1}`;
+    params.push(limit);
+  }
+
+  return queryDatabase(query, params);
 }
 
 
@@ -55,13 +85,20 @@ export async function onRequest(context) {
         let data;
 
         if (projectId) {
-            const results = await fetchFromSupabase(context, 'project_data', `?select=*&id=eq.${projectId}`);
+            const results = await fetchFromPostgres('project_data', { id: projectId }, { schema: 'porto_cms' });
             data = results.length > 0 ? results[0] : null;
             if (!data) return jsonResponse({ error: 'Project not found' }, 404);
         } else if (showcased) {
-            data = await fetchFromSupabase(context, 'project_data', '?select=*&is_showcased=eq.true&order=display_order.asc&limit=3');
+            data = await fetchFromPostgres('project_data', { is_showcased: true }, {
+                schema: 'porto_cms',
+                orderBy: 'display_order ASC',
+                limit: 3
+            });
         } else {
-            data = await fetchFromSupabase(context, 'project_data', '?select=*&order=display_order.asc');
+            data = await fetchFromPostgres('project_data', {}, {
+                schema: 'porto_cms',
+                orderBy: 'display_order ASC'
+            });
         }
         
         return jsonResponse(data);
@@ -95,7 +132,7 @@ export async function onRequest(context) {
 
     // --- Route 3: Proxy CMS requests to your Render backend ---
     if (pathname.startsWith('/cms')) {
-      const backendHost = "nana-porto-cms.onrender.com";
+      const backendHost = "cms.nanamulyanamaghfur.website";
       const newUrl = new URL(`https://${backendHost}${pathname}${url.search}`);
       const newRequest = new Request(newUrl, request);
       newRequest.headers.set('Host', backendHost);
@@ -115,6 +152,3 @@ export async function onRequest(context) {
     }, 500);
   }
 }
-
-
-"https://icebergchart-explainer.vercel.app/"

@@ -1,0 +1,12 @@
+{
+  "name": "cloudflare-worker-functions",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker Functions with PostgreSQL support",
+  "main": "_middleware.js",
+  "dependencies": {
+    "pg": "^8.11.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
