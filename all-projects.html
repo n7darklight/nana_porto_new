@@ -68,7 +68,7 @@
             const projectsGrid = document.getElementById('projects-grid');
             const loadingIndicator = document.getElementById('loading-indicator');
 
-            fetch(`${API_BASE_URL}/api/projects/all`)
+            fetch(`${API_BASE_URL}/api/projects`)
                 .then(response => response.json())
                 .then(projects => {
                     loadingIndicator.style.display = 'none'; // Hide loading indicator
