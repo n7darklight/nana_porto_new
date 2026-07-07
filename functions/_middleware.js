@@ -20,6 +20,58 @@ function jsonResponse(data, status = 200) {
   });
 }
 
+function normalizeArrayField(value) {
+  if (Array.isArray(value)) {
+    return value.filter((item) => item !== null && item !== undefined).map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+
+    try {
+      const parsedValue = JSON.parse(trimmed);
+      if (Array.isArray(parsedValue)) {
+        return parsedValue.filter((item) => item !== null && item !== undefined).map((item) => String(item).trim()).filter(Boolean);
+      }
+      if (parsedValue !== null && parsedValue !== undefined) {
+        return [String(parsedValue).trim()].filter(Boolean);
+      }
+    } catch (error) {
+      // Fall back to comma-separated parsing
+    }
+
+    return trimmed
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function normalizePayload(payload) {
+  if (Array.isArray(payload)) {
+    return payload.map((item) => normalizePayload(item));
+  }
+
+  if (payload && typeof payload === "object") {
+    const normalized = {};
+
+    for (const [key, value] of Object.entries(payload)) {
+      if (key === "technologies") {
+        normalized[key] = normalizeArrayField(value);
+      } else {
+        normalized[key] = normalizePayload(value);
+      }
+    }
+
+    return normalized;
+  }
+
+  return payload;
+}
+
 export async function onRequest(context) {
   try {
     const { request } = context;
@@ -51,7 +103,37 @@ export async function onRequest(context) {
         }
       );
 
-      return fetch(proxyRequest);
+      const backendResponse = await fetch(proxyRequest);
+      const contentType = backendResponse.headers.get("content-type") || "";
+
+      if (contentType.includes("application/json")) {
+        const responseText = await backendResponse.text();
+
+        try {
+          const parsedBody = JSON.parse(responseText);
+          const normalizedBody = normalizePayload(parsedBody);
+
+          const responseHeaders = new Headers(backendResponse.headers);
+          responseHeaders.set("Content-Type", "application/json");
+          responseHeaders.set("Access-Control-Allow-Origin", "*");
+
+          return new Response(JSON.stringify(normalizedBody), {
+            status: backendResponse.status,
+            headers: responseHeaders,
+          });
+        } catch (error) {
+          const responseHeaders = new Headers(backendResponse.headers);
+          responseHeaders.set("Content-Type", contentType || "application/json");
+          responseHeaders.set("Access-Control-Allow-Origin", "*");
+
+          return new Response(responseText, {
+            status: backendResponse.status,
+            headers: responseHeaders,
+          });
+        }
+      }
+
+      return backendResponse;
     }
 
     //

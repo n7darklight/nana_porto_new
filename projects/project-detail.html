@@ -112,6 +112,33 @@
             container.querySelectorAll('code').forEach(el => el.classList.add('bg-light-bg-secondary', 'dark:bg-dark-bg-secondary', 'px-2', 'py-1', 'rounded-md', 'text-sm'));
         }
 
+        function normalizeTechnologies(value) {
+            if (Array.isArray(value)) {
+                return value.filter(Boolean);
+            }
+
+            if (typeof value === 'string') {
+                const trimmed = value.trim();
+                if (!trimmed) return [];
+
+                try {
+                    const parsedValue = JSON.parse(trimmed);
+                    if (Array.isArray(parsedValue)) {
+                        return parsedValue.filter(Boolean);
+                    }
+                    if (parsedValue) {
+                        return [parsedValue];
+                    }
+                } catch (error) {
+                    // Ignore and fall back to comma split
+                }
+
+                return trimmed.split(',').map(item => item.trim()).filter(Boolean);
+            }
+
+            return [];
+        }
+
         // --- Dynamic Project Loading ---
         document.addEventListener('DOMContentLoaded', () => {
             const API_BASE_URL = ''; // Use empty string for production
@@ -182,8 +209,10 @@
 
                     // Populate tech stack as pills
                     const techStackContainer = document.getElementById('tech-stack-container');
-                    if (project.technologies && project.technologies.length > 0 && project.technologies[0]) {
-                        project.technologies.forEach(tech => {
+                    const technologies = normalizeTechnologies(project.technologies);
+
+                    if (technologies.length > 0) {
+                        technologies.forEach(tech => {
                             const pill = document.createElement('span');
                             pill.className = 'bg-light-accent/10 text-light-accent dark:bg-dark-accent/20 dark:text-indigo-300 text-sm font-medium px-3 py-1 rounded-full';
                             pill.textContent = tech;
